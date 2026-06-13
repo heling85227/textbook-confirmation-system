@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Streamlit
+.streamlit/secrets.toml
+
+# 数据库文件（含真实数据，不上传）
+*.db
+*.sqlite
+*.sqlite3
+
+# 环境配置（含密码等敏感信息）
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 工具备份（本地用）
+backups/
+
+# 解包临时目录
+*_unpacked/
+v21_unpacked/
+
+# 临时文件
+*.tmp
+*.bak
+old_spec_text.txt
+v21_text.txt
+
+# Word文档生成脚本（临时）
+generate_spec*.js
+gen_docx*.py
+enhance_docx*.py
+
+# Word 临时锁定文件
+~$*.docx
+~$*.xlsx
