@@ -491,6 +491,13 @@ def confirmation_page():
                 ws.title = "领书单"
                 nc = 10  # 固定10列（左右各5列: 序号、学号、姓名、领取状态、签字）
 
+                # ── 重新统计（确保数据最新，不依赖闭包变量）──
+                _dist_all = query_df(
+                    "SELECT DISTINCT student_id FROM distributions WHERE textbook_id = %s",
+                    (sel_tb[0],),
+                )
+                _got = len(_dist_all)
+
                 # Row 1: 大标题
                 ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=nc)
                 t = ws.cell(
@@ -502,17 +509,25 @@ def confirmation_page():
                 t.alignment = Alignment(horizontal="center", vertical="center")
                 ws.row_dimensions[1].height = 40
 
-                # Row 2: 信息栏
+                # Row 2: 信息栏（分两行避免溢出）
+                # Row 2a: 学院 + 班级 + 辅导员
                 ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=nc)
-                info_text = f"学院：{college_val}    班级：{c_class}    辅导员：{handler_name}    联系电话：{handler_phone or '________'}    领书人：{receiver_name or '___'}    班级人数：{total}人    领书人数：{got}人"
+                info_line1 = f"学院：{college_val}    班级：{c_class}    辅导员：{handler_name or '________'}    联系电话：{handler_phone or '________'}"
                 inf = Font(bold=False, size=11)
-                ws.cell(row=2, column=1, value=info_text).font = inf
-                ws.cell(row=2, column=1).alignment = Alignment(
-                    horizontal="center", vertical="center"
-                )
-                ws.row_dimensions[2].height = 25
+                c2 = ws.cell(row=2, column=1, value=info_line1)
+                c2.font = inf
+                c2.alignment = Alignment(horizontal="left", vertical="center")
+                ws.row_dimensions[2].height = 22
 
-                # Row 3+: 双栏表格（表头直接在信息栏下方）
+                # Row 2b: 领书人 + 统计数据
+                ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=nc)
+                info_line2 = f"领书人：{receiver_name or '________'}    班级人数：{total}人    领书人数：{_got}人"
+                c3 = ws.cell(row=3, column=1, value=info_line2)
+                c3.font = inf
+                c3.alignment = Alignment(horizontal="left", vertical="center")
+                ws.row_dimensions[3].height = 22
+
+                # Row 4: 双栏表格表头
                 left_headers = ["序号", "领书人", "学号", "领取", "签字"]
                 right_headers = ["序号", "领书人", "学号", "领取", "签字"]
                 half = math.ceil(total / 2)
@@ -524,12 +539,12 @@ def confirmation_page():
                 hfont = Font(bold=True, size=10)
 
                 for i, h in enumerate(left_headers):
-                    c = ws.cell(row=3, column=i + 1, value=h)
+                    c = ws.cell(row=4, column=i + 1, value=h)
                     c.font = hfont
                     c.border = border
                     c.alignment = Alignment(horizontal="center", vertical="center")
                 for i, h in enumerate(right_headers):
-                    c = ws.cell(row=3, column=i + 6, value=h)
+                    c = ws.cell(row=4, column=i + 6, value=h)
                     c.font = hfont
                     c.border = border
                     c.alignment = Alignment(horizontal="center", vertical="center")
@@ -550,7 +565,7 @@ def confirmation_page():
                 ROW_PX = 55 * 4 // 3    # 行高 ≈73px
 
                 for r_idx in range(max_rows):
-                    row_num = 4 + r_idx
+                    row_num = 5 + r_idx
                     ws.row_dimensions[row_num].height = 55
 
                     if r_idx < len(left_stu):
