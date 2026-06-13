@@ -200,7 +200,7 @@ def init_demo_data() -> dict:
                         except Exception:
                             pass
 
-    # ── 6. V2.0 核对确认演示数据 ──
+    # ── 6. V3.0 核对确认演示数据 ──
     try:
         from database_v2 import upsert_confirmation, add_notification
         confirm_count = _count("student_confirmations")

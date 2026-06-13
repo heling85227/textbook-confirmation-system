@@ -76,7 +76,7 @@ def login_page() -> None:
 
     st.markdown("""
     <div style="text-align:center; color:#9ca3af; font-size:12px; margin-top:48px;">
-        v2.5 &nbsp;|&nbsp; 支持 MySQL / SQLite &nbsp;|&nbsp; 按班级分页打印
+        V3.0 &nbsp;|&nbsp; 支持 MySQL / SQLite &nbsp;|&nbsp; 交互确认增强
     </div>
     """, unsafe_allow_html=True)
 
@@ -106,7 +106,7 @@ def admin_sidebar() -> None:
             ("📖", "教材征订表", "textbooks", "按班级查看/编辑征订明细"),
             ("📦", "教材发放表", "distribution", "录入发放记录"),
             ("✅", "领书确认表", "confirmation", "学生领书确认（免领标记）"),
-            ("📢", "反馈处理", "feedback", "查看和处理学生教材核对反馈 [V2.0新增]"),
+            ("📢", "反馈处理", "feedback", "查看和处理学生教材核对反馈"),
             ("📊", "费用统计", "statistics", "多维度费用汇总"),
             ("📋", "系统日志", "logs", "查看导入/操作记录"),
         ]
@@ -147,7 +147,7 @@ def student_sidebar() -> None:
         unread = get_unread_count(int(student["id"]))
         student_pages = [
             ("📊", "费用查询", "student_query", "查看个人教材费用"),
-            ("✅", "核对确认" + (f"({unread})" if unread > 0 else ""), "student_confirm", "核对教材信息并签名 [V2.0新增]"),
+            ("✅", "核对确认" + (f"({unread})" if unread > 0 else ""), "student_confirm", "核对教材信息并签名"),
         ]
 
         for emoji, label, key, desc in student_pages:

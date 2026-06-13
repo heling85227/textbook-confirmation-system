@@ -265,7 +265,7 @@ def init_db():
         # ── 自动迁移 ──
         _run_migrations(cur, conn)
 
-        # ── V2.0 新增表 ──
+        # ── V3.0 新增表 ──
         from database_v2 import init_v2_tables
         init_v2_tables(cur, conn)
 

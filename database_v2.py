@@ -1,8 +1,8 @@
 """
-数据库 V2.0 扩展模块
+数据库 V3.0 扩展模块
 ====================
 
-V2.0 交互确认增强功能新增的表和 CRUD：
+交互确认增强功能新增的表和 CRUD：
 - student_confirmations: 学生核对确认表
 - student_notifications: 学生通知表
 
@@ -32,7 +32,7 @@ if DB_TYPE == "mysql":
 # ═════════════════════════════════════════════════════════
 
 def init_v2_tables(cur, conn):
-    """在 init_db 末尾调用，创建 V2.0 新增表和索引"""
+    """在 init_db 末尾调用，创建 V3.0 新增表和索引"""
     tables = [
         # 学生核对确认表
         """CREATE TABLE IF NOT EXISTS student_confirmations (
@@ -73,7 +73,7 @@ def init_v2_tables(cur, conn):
         try:
             cur.execute(sql)
         except Exception as e:
-            print(f"[V2.0] 建表警告: {e}")
+            print(f"[V3.0] 建表警告: {e}")
 
     # 索引
     indexes = [
@@ -93,7 +93,7 @@ def init_v2_tables(cur, conn):
             pass
 
     conn.commit()
-    print("[V2.0] 新增表和索引创建完成")
+    print("[V3.0] 新增表和索引创建完成")
 
 
 # ═════════════════════════════════════════════════════════
