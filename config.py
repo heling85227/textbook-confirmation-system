@@ -9,12 +9,22 @@ import os
 
 
 def load_config() -> configparser.ConfigParser:
-    """从 config.ini 加载配置"""
+    """从 config.ini 加载配置（兼容 Streamlit Cloud 无文件环境）"""
     config = configparser.ConfigParser()
     config_path = os.path.join(os.path.dirname(__file__), "config.ini")
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"配置文件不存在：{config_path}")
-    config.read(config_path, encoding="utf-8")
+    if os.path.exists(config_path):
+        config.read(config_path, encoding="utf-8")
+    else:
+        # Streamlit Cloud 环境或无配置文件：使用默认值 + 环境变量
+        config["database"] = {
+            "type": os.environ.get("DB_TYPE", "sqlite"),
+            "host": os.environ.get("DB_HOST", "localhost"),
+            "port": os.environ.get("DB_PORT", "3306"),
+            "user": os.environ.get("DB_USER", "root"),
+            "password": "",
+            "database": os.environ.get("DB_NAME", "textbook_fee"),
+        }
+        config["admin"] = {"password": "admin123"}
     return config
 
 

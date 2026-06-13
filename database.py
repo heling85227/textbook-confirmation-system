@@ -26,8 +26,17 @@ PRICE_JOIN = "LEFT JOIN textbooks_master tm ON tm.isbn = t.isbn"
 
 
 def get_sqlite_path() -> str:
-    """返回 SQLite 数据库文件路径"""
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "textbook_data.db")
+    """返回 SQLite 数据库文件路径
+    Streamlit Cloud 文件系统只读，数据库必须放在 /tmp 目录下
+    """
+    # 检测是否运行在 Streamlit Cloud 环境（通过环境变量判断）
+    if os.environ.get("STREAMLIT_CLOUD") == "1" or not os.access(os.path.dirname(os.path.abspath(__file__)), os.W_OK):
+        # 云端环境：使用 /tmp 目录
+        db_path = "/tmp/textbook_data.db"
+    else:
+        # 本地开发：使用项目目录
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "textbook_data.db")
+    return db_path
 
 
 @contextmanager
