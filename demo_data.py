@@ -18,6 +18,23 @@ def _count(table: str) -> int:
         return 0
 
 
+def _get_semester_ids():
+    """获取学期 ID 映射（第一/第二学期）"""
+    sem_df = query_df("SELECT id, name FROM semesters ORDER BY id")
+    result = {}
+    sem1_id = None
+    sem2_id = None
+    for _, row in sem_df.iterrows():
+        name = row["name"]
+        sid = int(row["id"])
+        result[name] = sid
+        if "第一" in name:
+            sem1_id = sid
+        elif "第二" in name:
+            sem2_id = sid
+    return result, sem1_id, sem2_id
+
+
 def needs_demo_data() -> bool:
     """检测是否需要补充演示数据（任一关键表为空即触发）"""
     return (
@@ -44,22 +61,18 @@ def init_demo_data() -> dict:
             ("2025-2026 第一学期", "2025-2026", "第一学期"),
             ("2025-2026 第二学期", "2025-2026", "第二学期"),
         ]
-        sem_ids = {}
         for name, ay, sn in semesters_data:
             try:
-                sid = execute_sql(
+                execute_sql(
                     "INSERT INTO semesters (name, academic_year, semester_name) VALUES (%s, %s, %s)",
                     (name, ay, sn)
                 )
-                sem_ids[name] = sid
                 stats["semesters"] = stats.get("semesters", 0) + 1
             except Exception:
                 pass
-    else:
-        # 已有学期，读取 ID 映射
-        sem_df = query_df("SELECT id, name FROM semesters ORDER BY id")
-        sem_ids = {row["name"]: int(row["id"]) for _, row in sem_df.iterrows()}
 
+    # 无论学期是否为空，都获取最新 ID 映射
+    sem_ids, sem1_id, sem2_id = _get_semester_ids()
     stats["semester_ids"] = sem_ids
 
     # ── 2. 教材主表（核心！教材管理页面依赖此表）──
@@ -96,22 +109,13 @@ def init_demo_data() -> dict:
             except Exception:
                 pass
     else:
-        # 已有教材主表数据，读取映射
         master_df = query_df("SELECT id, isbn FROM textbooks_master")
         master_ids = {row["isbn"]: int(row["id"]) for _, row in master_df.iterrows() if row.get("isbn")}
-        # 也用 name 做备用索引
-        master_name_df = query_df("SELECT id, name FROM textbooks_master")
 
+    # 无论教材主表是否为空，都获取最新映射
+    master_df = query_df("SELECT id, isbn FROM textbooks_master")
+    master_ids = {row["isbn"]: int(row["id"]) for _, row in master_df.iterrows() if row.get("isbn")}
     stats["master_ids"] = master_ids
-
-    # 获取学期ID（用于后续关联）
-    sem1_id = None
-    sem2_id = None
-    for name, sid in sem_ids.items():
-        if "第一" in name:
-            sem1_id = sid
-        elif "第二" in name:
-            sem2_id = sid
 
     # ── 3. 学生（仅空表时填充）──
     if _count("students") == 0:
@@ -128,10 +132,10 @@ def init_demo_data() -> dict:
             ("320101200502010002", "2025010", "吴敏",   "2025级", "计算机学院", "计算机科学", "计算机科学1班"),
             ("320101200502010003", "2025011", "郑伟",   "2025级", "计算机学院", "计算机科学", "计算机科学1班"),
             ("320101200502010004", "2025012", "孙燕",   "2025级", "计算机学院", "计算机科学", "计算机科学1班"),
-            ("320101200503010001", "2025017", "马超",   "2025级", "数学学院", "应用数学", "应用数学1班"),
-            ("320101200503010002", "2025018", "高颖",   "2025级", "数学学院", "应用数学", "应用数学1班"),
-            ("320101200503010003", "2025019", "罗浩",   "2025级", "数学学院", "应用数学", "应用数学1班"),
-            ("320101200503010004", "2025020", "梁欣",   "2025级", "数学学院", "应用数学", "应用数学1班"),
+            ("320101200503010001", "2025017", "马超",   "2025级", "数学学院",   "应用数学", "应用数学1班"),
+            ("320101200503010002", "2025018", "高颖",   "2025级", "数学学院",   "应用数学", "应用数学1班"),
+            ("320101200503010003", "2025019", "罗浩",   "2025级", "数学学院",   "应用数学", "应用数学1班"),
+            ("320101200503010004", "2025020", "梁欣",   "2025级", "数学学院",   "应用数学", "应用数学1班"),
         ]
         for id_card, sid, name, grade, college, major, cls in students_data:
             try:
@@ -147,7 +151,6 @@ def init_demo_data() -> dict:
     # ── 4. 旧版 textbooks 表（仅空表时填充）──
     if _count("textbooks") == 0 and sem1_id and master_ids:
         textbooks_data = [
-            # 第一学期
             (sem1_id, "2025级", "计算机学院", "软件工程",   "软件工程1班",   "Python程序设计",     "清华大学出版社", "张三丰", "978-7-302-60001-1", 59.00, 8,  ""),
             (sem1_id, "2025级", "计算机学院", "软件工程",   "软件工程1班",   "数据结构与算法",     "清华大学出版社", "李思",   "978-7-302-60002-8", 45.00, 8,  ""),
             (sem1_id, "2025级", "计算机学院", "软件工程",   "软件工程1班",   "离散数学",           "清华大学出版社", "郑伟",   "978-7-302-60016-2", 40.00, 8,  ""),
@@ -209,15 +212,17 @@ def init_demo_data() -> dict:
                 for idx, (_, s) in enumerate(confirm_students.iterrows()):
                     stu_id = int(s["id"])
                     status = "confirmed" if idx < 2 else "pending"
-                    upsert_confirmation(stu_id, sem1_id, status)
+                    upsert_confirmation(stu_id, sem1_id, status=status)
 
                 add_notification(
                     int(confirm_students.iloc[0]["id"]),
                     sem1_id,
-                    "\U0001f4e2 请尽快完成第一学期教材核对确认",
+                    "📢 请尽快完成第一学期教材核对确认",
                     "confirmation_request"
                 )
-    except Exception:
-        pass
+                stats["confirmations"] = 4
+                stats["notifications"] = 1
+    except Exception as e:
+        stats["v2_error"] = str(e)
 
     return stats
