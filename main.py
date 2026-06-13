@@ -119,6 +119,24 @@ def main():
         st.error(f"❌ 数据库初始化失败：{e}")
         st.stop()
 
+    # ── 空库自动填充演示数据（Streamlit Cloud 等） ──
+    if "demo_initialized" not in st.session_state:
+        try:
+            from demo_data import is_database_empty, init_demo_data
+            if is_database_empty():
+                result = init_demo_data()
+                if not result.get("skipped"):
+                    st.session_state.demo_initialized = True
+        except Exception:
+            pass
+    # 每次都检查（Streamlit Cloud 容器重启后 /tmp 数据可能丢失）
+    try:
+        from demo_data import is_database_empty, init_demo_data
+        if is_database_empty():
+            init_demo_data()
+    except Exception:
+        pass
+
     # ── 路由分发 ──
     if st.session_state.role is None:
         # 未登录 → 显示登录页
