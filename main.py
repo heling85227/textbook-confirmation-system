@@ -119,16 +119,23 @@ def main():
         st.error(f"❌ 数据库初始化失败：{e}")
         st.stop()
 
-    # ── 空库自动填充演示数据（Streamlit Cloud 等） ──
+    # ── 空库/缺数据时自动填充演示数据（Streamlit Cloud 等） ──
     try:
-        from demo_data import is_database_empty, init_demo_data
-        if is_database_empty():
+        from demo_data import needs_demo_data, init_demo_data
+        if needs_demo_data():
             result = init_demo_data()
             if not result.get("skipped"):
                 st.session_state.demo_initialized = True
+            # 显示初始化结果（方便确认）
+            if "demo_shown" not in st.session_state:
+                summary = {k: v for k, v in result.items() if isinstance(v, int)}
+                if any(v > 0 for v in summary.values()):
+                    st.toast(f"\U0001f4e6 演示数据已加载: 学期={summary.get('semesters',0)}, "
+                            f"学生={summary.get('students',0)}, 教材主表={summary.get('master_books',0)}", icon="\u2705")
+                    st.session_state.demo_shown = True
     except Exception as e:
         import traceback
-        st.warning(f"⚠️ 演示数据初始化异常：{e}")
+        st.error(f"\u274c 演示数据初始化失败：{e}")
         st.code(traceback.format_exc())
 
     # ── 路由分发 ──
