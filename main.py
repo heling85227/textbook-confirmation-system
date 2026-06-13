@@ -120,22 +120,16 @@ def main():
         st.stop()
 
     # ── 空库自动填充演示数据（Streamlit Cloud 等） ──
-    if "demo_initialized" not in st.session_state:
-        try:
-            from demo_data import is_database_empty, init_demo_data
-            if is_database_empty():
-                result = init_demo_data()
-                if not result.get("skipped"):
-                    st.session_state.demo_initialized = True
-        except Exception:
-            pass
-    # 每次都检查（Streamlit Cloud 容器重启后 /tmp 数据可能丢失）
     try:
         from demo_data import is_database_empty, init_demo_data
         if is_database_empty():
-            init_demo_data()
-    except Exception:
-        pass
+            result = init_demo_data()
+            if not result.get("skipped"):
+                st.session_state.demo_initialized = True
+    except Exception as e:
+        import traceback
+        st.warning(f"⚠️ 演示数据初始化异常：{e}")
+        st.code(traceback.format_exc())
 
     # ── 路由分发 ──
     if st.session_state.role is None:

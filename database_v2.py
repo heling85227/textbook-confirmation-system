@@ -12,8 +12,19 @@ V2.0 交互确认增强功能新增的表和 CRUD：
 """
 
 import sqlite3
-import pymysql
 from datetime import datetime
+
+# pymysql 仅在 MySQL 模式下按需导入
+try:
+    from config import DB_TYPE
+except ImportError:
+    DB_TYPE = "sqlite"
+
+if DB_TYPE == "mysql":
+    try:
+        import pymysql
+    except ImportError:
+        pymysql = None
 
 
 # ═════════════════════════════════════════════════════════

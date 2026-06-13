@@ -10,11 +10,17 @@
 import os
 import sys
 import sqlite3
-import pymysql
 import pandas as pd
 from contextlib import contextmanager
 from config import DB_TYPE, DB_CONFIG
 from pathlib import Path
+
+# pymysql 仅在 MySQL 模式下按需导入
+if DB_TYPE == "mysql":
+    try:
+        import pymysql
+    except ImportError:
+        pymysql = None
 
 # ── 价格计算 SQL 片段 ──
 # 所有涉及教材结算价的查询统一通过 textbooks_master 实时计算
@@ -27,16 +33,17 @@ PRICE_JOIN = "LEFT JOIN textbooks_master tm ON tm.isbn = t.isbn"
 
 def get_sqlite_path() -> str:
     """返回 SQLite 数据库文件路径
-    Streamlit Cloud 文件系统只读，数据库必须放在 /tmp 目录下
+    Streamlit Cloud 容器重启后数据会丢失，但单次运行内可正常读写。
+    检测逻辑：如果项目目录下不存在 textbook_data.db（如云端首次部署），
+    则使用 /tmp 目录；本地有 .db 文件则继续使用。
     """
-    # 检测是否运行在 Streamlit Cloud 环境（通过环境变量判断）
-    if os.environ.get("STREAMLIT_CLOUD") == "1" or not os.access(os.path.dirname(os.path.abspath(__file__)), os.W_OK):
-        # 云端环境：使用 /tmp 目录
-        db_path = "/tmp/textbook_data.db"
+    local_db = os.path.join(os.path.dirname(os.path.abspath(__file__)), "textbook_data.db")
+    if os.path.exists(local_db):
+        # 本地已有数据库文件，直接使用
+        return local_db
     else:
-        # 本地开发：使用项目目录
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "textbook_data.db")
-    return db_path
+        # 云端首次部署（无 .db 文件）或全新本地环境，使用 /tmp
+        return "/tmp/textbook_data.db"
 
 
 @contextmanager
@@ -58,6 +65,8 @@ def get_connection():
         finally:
             conn.close()
     else:
+        if pymysql is None:
+            raise ImportError("MySQL 模式需要 pymysql，请安装：pip install pymysql")
         conn = pymysql.connect(**DB_CONFIG, cursorclass=pymysql.cursors.DictCursor)
         try:
             yield conn
@@ -69,6 +78,8 @@ def init_db():
     """初始化数据库表结构 + 自动迁移（MySQL 建库 + SQLite 建表/迁移）"""
     # ── MySQL: 先确保数据库存在 ──
     if DB_TYPE != "sqlite":
+        if pymysql is None:
+            raise ImportError("MySQL 模式需要 pymysql，请安装：pip install pymysql")
         try:
             tmp_conn = pymysql.connect(
                 host=DB_CONFIG["host"], port=DB_CONFIG["port"],

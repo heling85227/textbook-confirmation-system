@@ -1,7 +1,9 @@
 streamlit>=1.28.0
 pandas>=1.5.0
-pymysql>=1.1.0
 openpyxl>=3.1.0
 bcrypt>=4.0.0
 streamlit-drawable-canvas>=0.9.0
 Pillow>=10.0.0
+# pymysql 仅 MySQL 模式需要，SQLite 模式下可省略
+# 如需 MySQL，取消下面注释：
+# pymysql>=1.1.0
